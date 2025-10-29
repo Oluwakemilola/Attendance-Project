@@ -56,7 +56,7 @@ return res.status(200).json({
         email: newUser[0].email,
         password: newUser[0].password,
         track: newUser[0].track,
-        token: token
+        // token: token
     }
 })
 
@@ -69,8 +69,37 @@ return res.status(200).json({
 }
 
 
-export const signIn = async (req, res, next) =>{
-    res.send('Welcome Back')
+export const signin = async (req, res, next) =>{
+   try {
+    const {email, password} = req.body;
+    if(!email || !password) {
+        return res.status(400).json({message: "All fields are required"})
+    }
+        const User = await Auth.findOne({email})
+         if(!User) {
+            return res.status(400).json({message: "User not found"})
+         }
+
+         const ispasswordValid = await bcrypt.compare(password, User.password)
+         if(!ispasswordValid) {
+            return res.status(400).json({message:"Invalid Password"})
+         }
+
+         const token = jwt.sign({User: User.id}, JWT_SECRET, {expiresIn: JWT_EXPIRES_IN })
+         res.status(200).json({
+         sucesss: true,
+         message: 'Signin Sucessful',
+         token:token,
+         data:{
+            id: User.id,
+            name: User.name,
+            email: User.email,
+            track: User.track}
+         })
+         
+         } catch (error) {
+    next(error)
+   }
 
 }
 
