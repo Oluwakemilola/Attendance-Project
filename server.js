@@ -4,6 +4,7 @@ import { PORT } from './config/env.js';
 import authRouter from './routes/auth.route.js';
 import cookieparser from 'cookie-parser';
 import cors from 'cors'
+import enrollRouter from './routes/enroll.route.js';
 
 
 
@@ -24,6 +25,10 @@ app.use (express.urlencoded({extended: true}));
 
 // Router
 app.use('/api/v1/auth', authRouter)
+
+app.use('/api/v1/en', enrollRouter)
+
+app.use('api/vi/st', enrollRouter)
 
 
 app.listen(PORT, () => {
