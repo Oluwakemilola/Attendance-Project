@@ -1,199 +1,169 @@
 import mongoose from "mongoose";
 import Enroll from "../models/enroll.model.js";
+//MARK ATTENDANCE CONTROLLER
+// helper Function
+const isWeekend = (date) => {
+    const day = date.getDay()
+    return day === 0 || day === 6
+    //day 0 is sunday and day 6 is saturday
+}
 
+const getStartOfDay = (date) => {
+    const start = new Date(date)
+    start.setHours(9,0,0,0)
+    return start;
+}
 
- //MARK ATTENDANCE CONTROLLER
- 
-export const markAttendance = async (req, res) => {
-  try {
-    const { email, phonenumber, status } = req.body;
-    const attendanceStatus = status || "present";
-    const currentDate = new Date();
+const getEndOfDay = (date) =>{
+    const end = new Date(date)
+    end.setHours(13, 59, 99, 999)
+    return end
+}
+//Helper function to get working days from (mon-fri)
+const getWorkingDays = (startDate, endDate) => {
+    const workingDays = [ ];
+    const current = new Date(startDate)
 
-    // Validate input
-    if (!email || !phonenumber) {
-      return res.status(400).json({
-        message: "Email and phone number are required",
-      });
+    while (current <= endDate) {
+        if(!isWeekend(current)) {
+            workingDays.push(new Date(current))
+        }
+        current.setDate(current.getDate() + 1); // move to next day
     }
-
-    // Find student by email and phone number
-    const student = await Enroll.findOne({
-      email: email.toLowerCase(),
-      phonenumber,
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        message: "No student found with the provided email and phone number",
-      });
-    }
-
-    // Prevent duplicate attendance for the same day
-    const today = currentDate.toISOString().split("T")[0];
-    const existingRecord = student.attendance.find(
-      (record) => record.date.toISOString().split("T")[0] === today
-    );
-
-    if (existingRecord) {
-      return res.status(400).json({
-        message: "Attendance already marked for today",
-      });
-    }
-
-    // Mark attendance for today
-    student.attendance.push({
-      date: currentDate,
-      status: attendanceStatus,
-    });
-
-    await student.save();
-
-    // === Calculate Monthly Percentage (Weekdays only) ===
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-
-    // Step 1: Get all weekdays this month up to today
-    const weekdaysThisMonth = [];
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const todayDate = currentDate.getDate();
-
-    for (let day = 1; day <= todayDate; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        weekdaysThisMonth.push(date);
-      }
-    }
-
-    const totalWeekdays = weekdaysThisMonth.length;
-
-    // Step 2: Filter student's attendance for this month
-    const monthlyRecords = student.attendance.filter((record) => {
-      const recordDate = new Date(record.date);
-      return (
-        recordDate.getMonth() === currentMonth &&
-        recordDate.getFullYear() === currentYear
-      );
-    });
-
-    // Step 3: Count present weekdays
-    const presentDays = monthlyRecords.filter((record) => {
-      const day = new Date(record.date).getDay();
-      return record.status === "present" && day !== 0 && day !== 6;
-    }).length;
-
-    // Step 4: Calculate attendance percentage
-    const attendancePercentage =
-      totalWeekdays === 0 ? 0 : ((presentDays / totalWeekdays) * 100).toFixed(2);
-
-    // Return response
-    res.status(200).json({
-      message: "Attendance marked successfully",
-      student: {
-        firstname: student.firstname,
-        lastname: student.lastname,
-        email: student.email,
-        learningtrack: student.learningtrack,
-        markedDate: today,
-        status: attendanceStatus,
-      },
-      monthlyAttendance: {
-        month: currentDate.toLocaleString("default", { month: "long" }),
-        presentDays,
-        totalWeekdays,
-        percentage: `${attendancePercentage}%`,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Server error. Could not mark attendance.",
-    });
-  }
+    return workingDays;
 };
 
-/**
- * GET MONTHLY ATTENDANCE SUMMARY
- * ---------------------------------------------
- * - Returns a student's attendance summary for a given month/year.
- * - Excludes weekends (Sat/Sun) from the total days.
- */
-export const getMonthlyAttendance = async (req, res) => {
-  try {
-    const { email, phonenumber, month, year } = req.body;
+//1. To mark attendance
+export const markAttendance = async (req, res, next) => {
+    try {
+        const{email} = req.body;
+        // Check for empty input
+        if(!email) {
+            return res.status(400).json({
+                message:"Email is required"
+            })
+        }
 
-    if (!email || !phonenumber || !month || !year) {
-      return res.status(400).json({
-        message: "Email, phone number, month, and year are required",
-      });
+        // Validate if Student Exist
+        const student = await Enroll.findOne({email})
+        if (!student) {
+            return res.status(400).json({
+                message:"Student dosent exist"
+            })
+        }
+
+        const today = new Date()
+        console.log("Today's date is:", today);
+
+        //Check if today is weekend
+
+        if (isWeekend (today)) {
+            res.status(400).json({message: "Attendance cannot be marked today"})
+            
+        }
+
+     
+        // To prevent Student from marking twice
+        const endDate = getEndOfDay(today)
+        const startDate = getStartOfDay(today)
+        //  This means startOfDay is 0.00 midnight
+        // this means endOfDay is 11.59pm today,
+       // so we are creating a time range that represent today Only
+
+          if(today < startDate){
+          return res.status(400).json({message: "The day hasnt started yet"})
+        }
+
+         if(today > endDate){
+          return res.status(400).json({message: "The day has ended"})
+        }
+
+       const alreadyMarked = student.attendance.some((records) => {
+        const recordDate = new Date (records.date)
+        return recordDate >= startDate && recordDate <= endDate
+       })
+
+       if(alreadyMarked){
+        return res.status(400).json({
+            message:"Attendance Already Marked"
+        })
+       }
+
+       // To mark the student present
+
+       student.attendance.push({
+        date: today,
+        status: "present"
+       })
+
+       // To save it
+       await student.save()
+       return res.status(200).json({
+        message: "Attendance marked successfully"
+       })
+
+    } catch (error) {
+        res.status(500).json({message: "something went wrong",
+            error:error.message
+        })
     }
 
-    const student = await Enroll.findOne({
-      email: email.toLowerCase(),
-      phonenumber,
-    });
+}
 
-    if (!student) {
-      return res.status(404).json({
-        message: "Student not found",
-      });
-    }
-
-    const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
-    const targetYear = Number(year);
-
-    // Step 1: Get all weekdays for the target month
-    const weekdays = [];
-    const daysInMonth = new Date(targetYear, monthIndex + 1, 0).getDate();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(targetYear, monthIndex, day);
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        weekdays.push(date);
+export const autoMarkAbsence = async (req, res, next) => {
+    try {
+       const today = new Date(); // Helps to get todays date and time
+       //dont run if it is weekend
+       if(isWeekend(today)) {
+        const message = "weekend - No auto-marking needed";
+        console.log(message)
+       
+        if(res){
+            return res.status(200).json({message})
+        }
+        return;
       }
+        //check if the current time is between (9am and 1:59pm)
+        const dayBegins = getStartOfDay(today)
+        const dayEnds = getEndOfDay(today)
+
+        // This will return all the list of the students in the database
+
+        const students = await Enroll.find({})
+         //Looping through the list of student to check how many students are present or absent
+        let MarkedCount = 0;
+        for(const student of students){
+            const markToday = student.attendance.some((record) =>{
+                const recordDate = new Date(record.date)
+                // Check if the date is within today 
+                return (record.status === "present" &&
+                  recordDate >= dayBegins && recordDate <= dayEnds
+                )
+            })
+
+            // if attendance is not marked todat, mark them absent
+            if(!markToday) {
+              student.attendance.push({
+                date:today,
+                status: "absent"
+              });
+
+              await student.save();
+              MarkedCount ++
+              console.log(`Auto marked ${student.email} as absent for today ${today.toDateString()}`)
+            }
+        };
+        const message = `The total number of student auto marked as absent today is ${MarkedCount}`;
+        console.log(message)
+    } catch (error) {
+      console.log("Error in auto marking absence:", error.message);
+      
     }
+}
+export const getOverallAllAttendance = async (req, res, next) => {
 
-    const totalWeekdays = weekdays.length;
+}
 
-    // Step 2: Filter attendance for the target month
-    const monthlyRecords = student.attendance.filter((record) => {
-      const d = new Date(record.date);
-      return d.getMonth() === monthIndex && d.getFullYear() === targetYear;
-    });
+export const studentWithAttendance = async (req, res, next) => {
 
-    // Step 3: Count present weekdays
-    const presentDays = monthlyRecords.filter((record) => {
-      const d = new Date(record.date);
-      const dayOfWeek = d.getDay();
-      return record.status === "present" && dayOfWeek !== 0 && dayOfWeek !== 6;
-    }).length;
-
-    // Step 4: Calculate percentage
-    const percentage =
-      totalWeekdays === 0 ? 0 : ((presentDays / totalWeekdays) * 100).toFixed(2);
-
-    res.status(200).json({
-      message: "Monthly attendance summary retrieved successfully",
-      student: {
-        firstname: student.firstname,
-        lastname: student.lastname,
-        email: student.email,
-        learningtrack: student.learningtrack,
-      },
-      summary: {
-        month,
-        year,
-        presentDays,
-        totalWeekdays,
-        percentage: `${percentage}%`,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Server error. Could not retrieve attendance summary.",
-    });
-  }
-};
+}

@@ -5,11 +5,10 @@ import authRouter from './routes/auth.route.js';
 import cookieparser from 'cookie-parser';
 import cors from 'cors'
 import enrollRouter from './routes/enroll.route.js';
-import attendRouter from './routes/attendance.route.js';
-
-
-
-
+import attendanceRouter from './routes/attendance.route.js';
+import { autoMarkAbsence } from './Controllers/attendance.controllers.js';
+import cron from 'node-cron';
+// Schedule the autoMarkabsence function to run every day at 2:00 PM
 
 const app = express();
 // middlewares
@@ -23,11 +22,18 @@ app.use(cors({
 })),
 app.use (express.urlencoded({extended: true}));
 
+cron.schedule(' * * * * *', async () => {
+    console.log("Testing cron job for auto marking absence")
+    await autoMarkAbsence(null, null);
+});
+
+
 
 // Router
 app.use('/api/v1/auth', authRouter)
 
 app.use('/api/v1/en', enrollRouter)
+app.use('/api/v1', attendanceRouter)
 
 
 

@@ -1,12 +1,9 @@
 import { Router } from "express";
-import {
-  markAttendance,
-  getMonthlyAttendance,
-} from "../Controllers/attendance.controllers.js"
+import {markAttendance, autoMarkAbsence} from "../Controllers/attendance.controllers.js"
 
-const attendRouter = Router();
+const attendanceRouter = Router();
 
-attendRouter.post("/mark", markAttendance);          // Mark attendance
-attendRouter.post("/summary", getMonthlyAttendance); // Get monthly summary
+attendanceRouter.post("/mark", markAttendance);          // Mark attendance
+attendanceRouter.post("/automarkabsence", autoMarkAbsence); // Get monthly summary
 
-export default attendRouter;
+export default attendanceRouter;
