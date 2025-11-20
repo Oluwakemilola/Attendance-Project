@@ -233,8 +233,11 @@ export const studentWithAttendance = async (req, res, next) => {
 export const filterByTrack = async (req, res, next) => {
     try {
         const {learningtrack} = req.query
-        if(!learningtrack)
-            return res.status(400).json({message:"Learning track not found"})
+
+        if(!learningtrack){
+            return res.status(400).json({message:"provide a Learning track"})
+        }
+
         const trainee = await Enroll.find({learningtrack}, {
             firstname: 1,
             lastname: 1,
@@ -242,23 +245,20 @@ export const filterByTrack = async (req, res, next) => {
             learningtrack: 1,
             attendance: 1
         })
-        // to filter
-        const findtrainees = trainee.map(trainee => {
-            const filteredtrainees = trainee.attendance.filter(record => record.track === learningtrack)
-         
-        if(filteredtrainees.length > 0) {
-            return {
-                name: `${trainee.firstname} ${trainee.lastname}`,
-                email: trainee.email,
-                learningtrack: trainee.learningtrack,
-                gender: trainee.gender
-            }
-        }          
-            
-        return null
-        }).filter(Boolean)
+
+        if(trainee.length === 0){
+             return res.status(404).json({message:"Learning track not found"})
+        }
+
+        const findtrainees = trainee.map(t=> ({
+                name: `${t.firstname} ${t.lastname}`,
+                email: t.email,
+                learningtrack: t.learningtrack,
+                gender: t.gender
+        }))
+        
         res.status(200).json({message: "successful",
-            data: trainee
+            data: findtrainees
         })
     } catch (error) {
         res.status(500).json({message:"something went wrong",
