@@ -22,7 +22,7 @@ app.use(cors({
 })),
 app.use (express.urlencoded({extended: true}));
 
-cron.schedule(' * * * * *', async () => {
+cron.schedule(' 59 14 * * *', async () => {
     console.log("Testing cron job for auto marking absence")
     await autoMarkAbsence(null, null);
 });
@@ -33,7 +33,7 @@ cron.schedule(' * * * * *', async () => {
 app.use('/api/v1/auth', authRouter)
 
 app.use('/api/v1/en', enrollRouter)
-app.use('/api/v1', attendanceRouter)
+app.use('/api/v1/atd', attendanceRouter)
 
 
 
@@ -44,5 +44,4 @@ app.listen(PORT, () => {
     console.log(`server is running `)
     
 })
-
 

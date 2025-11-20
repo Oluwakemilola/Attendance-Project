@@ -16,7 +16,7 @@ const getStartOfDay = (date) => {
 
 const getEndOfDay = (date) =>{
     const end = new Date(date)
-    end.setHours(13, 59, 99, 999)
+    end.setHours(14, 59, 99, 999)
     return end
 }
 //Helper function to get working days from (mon-fri)
@@ -147,6 +147,7 @@ export const autoMarkAbsence = async (req, res, next) => {
                 date:today,
                 status: "absent"
               });
+              
 
               await student.save();
               MarkedCount ++
@@ -160,10 +161,108 @@ export const autoMarkAbsence = async (req, res, next) => {
       
     }
 }
+
+
+ export const getAttendanceByDateRange = async (req, res, next) => {
+        // This line gets the query strings
+        try {
+            const {start, end} = req.query
+
+        // this block checks if start and end exist
+        if (!start || !end){
+            return res.status(400).json({
+                message: "Start date and end date are required!"})
+        }
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+        endDate.setHours(23, 59, 59, 999)
+
+        if (isNaN(startDate) || isNaN(endDate)){
+            return res.status(400).json({
+                message: "Not a valid date, try YYYY-MM-DD"})
+        }
+        const students = await Enroll.find({}, {
+            firstname: 1,
+            lastname: 1,
+            email: 1,
+            track: 1,
+            attendance: 1,})
+
+        //filtering
+       const findStudents = students.map(student => {
+        const filteredStudents = student.attendance.filter(record => {
+            const recordDate = new Date(record.date)
+            return recordDate >= startDate && recordDate <= endDate})
+
+            if(filteredStudents.length > 0) {
+                return {
+                    name: `${student.firstname} ${student.lastname}`,
+                    email: student.email,
+                    learningtrack: student.learningtrack,
+                    gender: student.gender
+                }
+            }
+            return null
+       }).filter(Boolean)
+       res.status(200).json({message: "successful",
+        data: findStudents
+       })
+        } catch (error) {
+            
+            res.status(500).json({
+        message: "something went wrong", error:error.message
+       })
+        }
+
+       
+       
+    }
+   
+    
+
+
+
 export const getOverallAllAttendance = async (req, res, next) => {
 
 }
 
 export const studentWithAttendance = async (req, res, next) => {
 
+}
+
+export const filterByTrack = async (req, res, next) => {
+    try {
+        const {learningtrack} = req.query
+        if(!learningtrack)
+            return res.status(400).json({message:"Learning track not found"})
+        const trainee = await Enroll.find({learningtrack}, {
+            firstname: 1,
+            lastname: 1,
+            email: 1,
+            learningtrack: 1,
+            attendance: 1
+        })
+        // to filter
+        const findtrainees = trainee.map(trainee => {
+            const filteredtrainees = trainee.attendance.filter(record => record.track === learningtrack)
+         
+        if(filteredtrainees.length > 0) {
+            return {
+                name: `${trainee.firstname} ${trainee.lastname}`,
+                email: trainee.email,
+                learningtrack: trainee.learningtrack,
+                gender: trainee.gender
+            }
+        }          
+            
+        return null
+        }).filter(Boolean)
+        res.status(200).json({message: "successful",
+            data: trainee
+        })
+    } catch (error) {
+        res.status(500).json({message:"something went wrong",
+            error: error.message
+        })
+    }
 }

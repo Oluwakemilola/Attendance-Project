@@ -303,3 +303,12 @@ export const markAttendance = async (req, res, next) => {
       })  
     }
 }
+
+
+filter
+const findStudents = students.map(student => {
+            const filteredStudents = student.attendance.filter(record => {
+            const recordDate = new Date(record.date)
+            return recordDate >= startDate && recordDate <= endDate}
+
+     )}
