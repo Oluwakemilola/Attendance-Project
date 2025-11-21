@@ -220,15 +220,104 @@ export const autoMarkAbsence = async (req, res, next) => {
    
     
 
-
+// To get overall Attendance
 
 export const getOverallAllAttendance = async (req, res, next) => {
+    try {
+        const students = await Enroll.find({});
+        if (students.length === 0) {
+            return res.status(404).json({message: "No students found"})
+        }
+        let totalPresent = 0; // count how many times students were present in total
+        let totalAbsent = 0; // counts total number of absences
+        
+        const summaries = [ ] // holds attendance information for each individual students
+
+        students.forEach((student) => {
+            const presentDays = student.attendance.filter((b) => b.status === "present").length;
+
+            const absentDays = student.attendance.filter(
+                (b) => b.status === "absent"
+            ).length;
+
+            const totalDays = presentDays + absentDays;
+            const percentage = totalDays === 0 ? 0 : (presentDays / totalDays) * 100;
+
+            totalPresent += presentDays;
+            totalAbsent += absentDays;
+
+            summaries.push({
+                name:`${student.firstname} ${student.lastname}`,
+                email: student.email,
+                present: presentDays,
+                absent: absentDays,
+                percentage,
+            })
+        })
+        // best student(highest percentage)
+
+ const best = summaries.reduce((max, s) => (s.percentage > max.percentage ? s : max), 
+summaries[0])
+ // Worst student (lowest percentage)
+        const worst = summaries.reduce(
+            (min, s) => (s.percentage < min.percentage ? s : min),
+            summaries[0]
+        );
+
+ const averageAttendance = summaries.reduce((sum, s) => sum + s.percentage, 0) / summaries.length;
+
+ return res.status(200).json({
+    totalPresent,
+    totalAbsent,
+    averageAttendance,
+    bestStudent: best,
+    worstStudent: worst,
+    allAttendance: summaries
+ })
+
+    } catch (error) {
+        res.status(500).json({message:"server error",
+            error: error.message
+        })
+    }
 
 }
 
 export const studentWithAttendance = async (req, res, next) => {
 
 }
+export const getAllStudentsWithAttendance = async (req, res, next) => {
+  console.log("fetching all students");
+
+  try {
+    const students = await Enroll.find({});
+
+    const result = students.map((student) => {
+      const presentDays = student.attendance.filter(
+        (a) => a.status === "present"
+      ).length;
+      const absentDays = student.attendance.filter(
+        (a) => a.status === "absent"
+      ).length;
+      const totalDays = presentDays + absentDays;
+
+      
+      const percentage = totalDays === 0 ? 0 : (presentDays / totalDays) * 100;
+
+      return {
+        name: `${student.firstname} ${student.lastname}`,
+        email: student.email,
+        presentDays,
+        absentDays,
+        percentage: percentage.toFixed(2),
+      };
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log("error in this route", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 export const filterByTrack = async (req, res, next) => {
     try {
