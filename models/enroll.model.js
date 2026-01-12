@@ -87,15 +87,15 @@ enrollSchema.virtual("fullname").get(function () {
 })
 
 // To get attendance Percentage 
-enrollSchema.method.getAttendancePercentage = function () {
+enrollSchema.methods.getAttendancePercentage = function () {
     //step 1: Check if student has attendance record
-    if(this.attendance.lenght === 0) return 0;
+    if(this.attendance.length === 0) return 0;
 
     //step 2: Count how many times they were present
 
     const presentCount = this.attendance.filter((record) => record.status === "present").length
 
-return ((presentCount / this.attendance.lenght) * 100).toFixed(2)
+return ((presentCount / this.attendance.length) * 100).toFixed(2)
 }
 
 

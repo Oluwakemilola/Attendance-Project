@@ -79,7 +79,17 @@
         "tags": ["Enrollment"],
         "summary": "Get all enrolled students",
         "responses": {
-          "200": { "description": "List of students" },
+          "200": {
+            "description": "List of students",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/EnrollResponse" }
+                }
+              }
+            }
+          },
           "500": { "description": "Server error" }
         }
       }
@@ -95,10 +105,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": {
-                    "type": "string",
-                    "example": "student@email.com"
-                  }
+                  "email": { "type": "string", "example": "student@email.com" }
                 },
                 "required": ["email"]
               }
@@ -107,7 +114,7 @@
         },
         "responses": {
           "200": { "description": "Attendance marked successfully" },
-          "400": { "description": "Invalid request" },
+          "400": { "description": "Invalid request or attendance already marked" },
           "500": { "description": "Server error" }
         }
       }
@@ -117,7 +124,14 @@
         "tags": ["Attendance"],
         "summary": "Get overall attendance summary",
         "responses": {
-          "200": { "description": "Attendance summary" },
+          "200": {
+            "description": "Attendance summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OverallAttendanceResponse" }
+              }
+            }
+          },
           "500": { "description": "Server error" }
         }
       }
@@ -127,7 +141,17 @@
         "tags": ["Attendance"],
         "summary": "Get all students with attendance stats",
         "responses": {
-          "200": { "description": "Students attendance list" },
+          "200": {
+            "description": "List of students with attendance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/StudentAttendanceSummary" }
+                }
+              }
+            }
+          },
           "500": { "description": "Server error" }
         }
       }
@@ -145,7 +169,14 @@
           }
         ],
         "responses": {
-          "200": { "description": "Student attendance details" },
+          "200": {
+            "description": "Student attendance details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SingleStudentAttendance" }
+              }
+            }
+          },
           "404": { "description": "Student not found" }
         }
       }
@@ -163,7 +194,24 @@
           }
         ],
         "responses": {
-          "200": { "description": "Attendance by track" },
+          "200": {
+            "description": "Students attendance in track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "count": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/StudentAttendanceSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": { "description": "No students found" }
         }
       }
@@ -173,21 +221,11 @@
         "tags": ["Attendance"],
         "summary": "Get attendance by date range",
         "parameters": [
-          {
-            "name": "start",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string", "example": "2024-01-01" }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string", "example": "2024-01-31" }
-          }
+          { "name": "start", "in": "query", "required": true, "schema": { "type": "string", "example": "2024-01-01" } },
+          { "name": "end", "in": "query", "required": true, "schema": { "type": "string", "example": "2024-01-31" } }
         ],
         "responses": {
-          "200": { "description": "Attendance records" },
+          "200": { "description": "Attendance records", "content": { "application/json": { "schema": { "type": "object" } } } },
           "400": { "description": "Invalid date format" }
         }
       }
@@ -197,15 +235,10 @@
         "tags": ["Attendance"],
         "summary": "Search attendance by student name",
         "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "search", "in": "query", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "Matching students" },
+          "200": { "description": "Matching students", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttendanceByNameResponse" } } } },
           "404": { "description": "No student found" }
         }
       }
@@ -241,6 +274,75 @@
           "phonenumber": { "type": "string" },
           "gender": { "type": "string" },
           "learningtrack": { "type": "string" }
+        }
+      },
+      "EnrollResponse": {
+        "type": "object",
+        "properties": {
+          "firstname": { "type": "string" },
+          "lastname": { "type": "string" },
+          "email": { "type": "string" },
+          "phonenumber": { "type": "string" },
+          "gender": { "type": "string" },
+          "learningtrack": { "type": "string" },
+          "attendance": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "StudentAttendanceSummary": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "track": { "type": "string" },
+          "presentDays": { "type": "integer" },
+          "absentDays": { "type": "integer" },
+          "percentage": { "type": "number" }
+        }
+      },
+      "SingleStudentAttendance": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "presentDays": { "type": "integer" },
+          "absentDays": { "type": "integer" },
+          "percentage": { "type": "number" },
+          "attendanceHistory": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "OverallAttendanceResponse": {
+        "type": "object",
+        "properties": {
+          "totalStudents": { "type": "integer" },
+          "totalPresentToday": { "type": "integer" },
+          "totalAbsentToday": { "type": "integer" },
+          "overallAttendancePercentage": { "type": "number" },
+          "averageAttendance": { "type": "number" },
+          "bestAttendance": { "type": "number" },
+          "worstAttendance": { "type": "number" },
+          "summarises": { "type": "array", "items": { "$ref": "#/components/schemas/StudentAttendanceSummary" } }
+        }
+      },
+      "AttendanceByNameResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "count": { "type": "integer" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": "string" },
+                "gender": { "type": "string" },
+                "learningTrack": { "type": "string" },
+                "attendanceCount": { "type": "integer" },
+                "presence": { "type": "integer" },
+                "absence": { "type": "integer" },
+                "records": { "type": "array", "items": { "type": "object" } }
+              }
+            }
+          }
         }
       }
     }

@@ -16,6 +16,6 @@ attendanceRouter.get("/students-attendance", getAllStudentWithAttendance);
 attendanceRouter.get("/student/:id", getStudentAttendance);
 attendanceRouter.get("/student-track/:track", getAttendanceByTrack);
 attendanceRouter.get("/date-range", getAttendanceByDateRange);
-attendanceRouter.get("/student-name/:name", getAttendanceByName);
+attendanceRouter.get("/student-name", getAttendanceByName);
 
 export default attendanceRouter;

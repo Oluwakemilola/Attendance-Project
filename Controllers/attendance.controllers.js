@@ -209,14 +209,14 @@ export const getOverallAttendance = async (req, res, next) => {
             if (isAbsentToday) totalAbsentToday++;
 
             // Student's overall attendance percentage from schema method
-            const attendancePercentage = student.getAttendancePercentage();
+            const attendancePercentage = Number(student.getAttendancePercentage());
 
             summarises.push({
                 studentId: student._id,
-                name: `${student.Firstname} ${student.Lastname}`,
+                name: `${student.firstname} ${student.lastname}`,
                 email: student.email,
                 gender: student.gender,
-                learningTrack: student.learningTrack,
+                learningTrack: student.Track,
                 presentToday: isPresentToday ? 1 : 0,
                 absentToday: isAbsentToday ? 1 : 0,
                 attendancePercentage
@@ -224,8 +224,16 @@ export const getOverallAttendance = async (req, res, next) => {
         });
 
         // Find student with highest and lowest attendance
-        const best = summarises.reduce((max, s) => (s.attendancePercentage > max.attendancePercentage ? s : max), summarises[0]);
-        const worst = summarises.reduce((min, s) => (s.attendancePercentage < min.attendancePercentage ? s : min), summarises[0]);
+       const best = summarises.reduce(
+    (max, s) => s.attendancePercentage > max.attendancePercentage ? s : max,
+    summarises[0]
+);
+
+const worst = summarises.reduce(
+    (min, s) => s.attendancePercentage < min.attendancePercentage ? s : min,
+    summarises[0]
+);
+
 
         // Average attendance
         const averageAttendance = summarises.reduce((sum, s) => sum + s.attendancePercentage, 0) / totalStudents;
@@ -234,15 +242,16 @@ export const getOverallAttendance = async (req, res, next) => {
         const overallAttendancePercentage = summarises.reduce((sum, s) => sum + s.attendancePercentage, 0) / totalStudents;
 
         return res.status(200).json({
-            totalStudents,
-            totalPresentToday,
-            totalAbsentToday,
-            overallAttendancePercentage: Number(overallAttendancePercentage.toFixed(2)),
-            averageAttendance: Number(averageAttendance.toFixed(2)),
-            bestAttendance: Number(best.attendancePercentage.toFixed(2)),
-            worstAttendance: Number(worst.attendancePercentage.toFixed(2)),
-            summarises
-        });
+    totalStudents,
+    totalPresentToday,
+    totalAbsentToday,
+    overallAttendancePercentage: Number(overallAttendancePercentage.toFixed(2)),
+    averageAttendance: Number(averageAttendance.toFixed(2)),
+    bestAttendance: Number(best.attendancePercentage.toFixed(2)),
+    worstAttendance: Number(worst.attendancePercentage.toFixed(2)),
+    summarises
+});
+
 
     } catch (error) {
         return res.status(500).json({
@@ -257,60 +266,68 @@ export const getOverallAttendance = async (req, res, next) => {
 // Filters attendance history between start and end dates
 // and returns matching students with basic profile details.
 
- export const getAttendanceByDateRange = async (req, res, next) => {
-        // This line gets the query strings
-        try {
-            const {start, end} = req.query
+ export const getAttendanceByDateRange = async (req, res) => {
+    try {
+        const { start, end } = req.query;
 
-        // this block checks if start and end exist
-        if (!start || !end){
+        if (!start || !end) {
             return res.status(400).json({
-                message: "Start date and end date are required!"})
+                message: "Start date and end date are required!"
+            });
         }
-        const startDate = new Date(start)
-        const endDate = new Date(end)
-        endDate.setHours(23, 59, 59, 999)
 
-        if (isNaN(startDate) || isNaN(endDate)){
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (isNaN(startDate) || isNaN(endDate)) {
             return res.status(400).json({
-                message: "Not a valid date, try YYYY-MM-DD"})
+                message: "Not a valid date, use YYYY-MM-DD"
+            });
         }
+
         const students = await Enroll.find({}, {
             firstname: 1,
             lastname: 1,
             email: 1,
-            track: 1,
-            attendance: 1,})
+            learningtrack: 1,
+            gender: 1,
+            attendance: 1
+        });
 
-        //filtering
-       const findStudents = students.map(student => {
-        const filteredStudents = student.attendance.filter(record => {
-            const recordDate = new Date(record.date)
-            return recordDate >= startDate && recordDate <= endDate})
+        const filteredStudents = students
+            .map(student => {
+                const attendanceInRange = student.attendance.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate >= startDate && recordDate <= endDate;
+                });
 
-            if(filteredStudents.length > 0) {
+                if (!attendanceInRange.length) return null;
+
                 return {
                     name: `${student.firstname} ${student.lastname}`,
                     email: student.email,
                     learningtrack: student.learningtrack,
-                    gender: student.gender
-                }
-            }
-            return null
-       }).filter(Boolean)
-       res.status(200).json({message: "successful",
-        data: findStudents
-       })
-        } catch (error) {
-            
-            res.status(500).json({
-        message: "something went wrong", error:error.message
-       })
-        }
+                    gender: student.gender,
+                    totalRecords: attendanceInRange.length
+                };
+            })
+            .filter(Boolean);
 
-       
-       
+        return res.status(200).json({
+            message: "successful",
+            count: filteredStudents.length,
+            data: filteredStudents
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "something went wrong",
+            error: error.message
+        });
     }
+};
+
    
 // 5. getAllStudentWithAttendance
 // Retrieves all students with their attendance summaries.
@@ -407,7 +424,7 @@ export const getStudentAttendance = async (req, res, next) => {
 
         // Send the final response back to the client
         return res.status(200).json({
-            name: `${student.Firstname} ${student.Lastname}`, // Student's full name
+            name: `${student.firstname} ${student.lastname}`, // Student's full name
             presentDays: totalPresent,                        // Number of present days
             absentDays: totalAbsent,                          // Number of absent days
             percentage,                                        // Attendance percentage
@@ -468,8 +485,8 @@ export const getAttendanceByTrack = async (req, res, next) => {
         const track = req.params.track.replace(/-/g, " ");
 
         // Find students in this specific learning track, case-insensitive match
-        const students = await enroll.find({
-            learningTrack: new RegExp(`^${track}$`, "i")
+        const students = await Enroll.find({
+            learningtrack: new RegExp(`^${track}$`, "i")
         });
 
         // If no students found, return an error response
@@ -495,7 +512,7 @@ export const getAttendanceByTrack = async (req, res, next) => {
 
             // Return structured attendance data for this student
             return {
-                name: `${student.Firstname} ${student.Lastname}`,   // Full name
+                name: `${student.firstname} ${student.lastname}`,   // Full name
                 email: student.email,                               // Email address
                 track: student.track,                                // 
                 presentDays,                                        // Total present count
@@ -535,18 +552,18 @@ export const getAttendanceByName = async (req, res) => {
 
         // Search for a student using a case-insensitive match.
         const regex = new RegExp(search, "i");
-        const students = await enroll.find({
+        const students = await Enroll.find({
             $or: [
-                {Firstname: regex},
-                {Lastname: regex}
+                {firstname: regex},
+                {lastname: regex}
             ]
         },
         {
-            Firstname: 1,
-            Lastname: 1,
+            firstname: 1,
+            lastname: 1,
             email: 1,
             gender: 1,
-            learningTrack: 1,
+            track: 1,
             attendance: 1
         }
     )
@@ -564,7 +581,7 @@ export const getAttendanceByName = async (req, res) => {
             name: `${student.firstname} ${student.lastname}`,
             email: student.email,
             gender: student.gender,
-            learningTrack: student.learningTrack,
+            learningTrack: student.track,
             attendanceCount: student.attendance.length,
             presence: student.attendance.filter(s => s.status === "present").length,
             absence: student.attendance.filter(s => s.status === "absent").length,
