@@ -1,11 +1,11 @@
 // Hiding evn Details
 import {config} from 'dotenv';
 
-config({path: `.env.${process.env.NODE_ENV || 'development'}.local`});
+config({path: `.env.${process.env.NODE_ENV || "development"}.local`})
 
 export const {
     PORT,
-    MONGODB_URL,
+    DB_URL,
     JWT_EXPIRES_IN,
     JWT_SECRET
 } = process.env

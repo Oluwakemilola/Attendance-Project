@@ -8,10 +8,12 @@ import enrollRouter from './routes/enroll.route.js';
 import attendanceRouter from './routes/attendance.route.js';
 import { autoMarkAbsence } from './Controllers/attendance.controllers.js';
 import cron from 'node-cron';
+import { swaggerDocs } from './config/swagger.js';
+
 // Schedule the autoMarkabsence function to run every day at 2:00 PM
 
 const app = express();
-// middlewares
+//middlewares
 app.use(cookieparser());
 app.use (express.json());
 app.use(cors({
@@ -20,6 +22,14 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Contenty-Type", "Authorization"]
 })),
+// app.use(
+//   cors({
+//     origin: "*",
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     allowedHeaders: ["Content-Type", "Authorization"]
+//   })
+// );
+
 app.use (express.urlencoded({extended: true}));
 
 cron.schedule(' 59 14 * * *', async () => {
@@ -27,12 +37,11 @@ cron.schedule(' 59 14 * * *', async () => {
     await autoMarkAbsence(null, null);
 });
 
-
-
+//SWAGGER DOCS
+swaggerDocs(app)
 // Router
 app.use('/api/v1/auth', authRouter)
-
-app.use('/api/v1/en', enrollRouter)
+app.use('/api/v1/enroll', enrollRouter)
 app.use('/api/v1/atd', attendanceRouter)
 
 

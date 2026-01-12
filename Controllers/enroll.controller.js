@@ -9,7 +9,7 @@ export const enroll = async(req, res, next) => {
         const {firstname, lastname, email, phonenumber, gender, learningtrack} = req.body;
 
         // To check if any of the data is missing
-        if(!firstname || !lastname || !email  || !phonenumber ||!gender || ! learningtrack ) {
+        if(!firstname || !lastname || !email  || !phonenumber || !gender || !learningtrack ) {
             return res.status(400).json({
                 message:"All fields are required"
             })

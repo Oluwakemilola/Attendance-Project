@@ -54,7 +54,7 @@ return res.status(200).json({
         id: newUser[0]._id,
         name: newUser[0].name,
         email: newUser[0].email,
-        password: newUser[0].password,
+        // password: newUser[0].password,
         track: newUser[0].track,
         // token: token
     }

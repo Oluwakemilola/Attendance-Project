@@ -1,0 +1,248 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Attendance Management API",
+    "description": "API for student enrollment, authentication, and attendance tracking",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Enrollment" },
+    { "name": "Attendance" }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Signup" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User created successfully" },
+          "400": { "description": "Validation error" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/auth/signin": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign in a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Signin" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Signin successful" },
+          "400": { "description": "Invalid credentials" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/enroll/enroll": {
+      "post": {
+        "tags": ["Enrollment"],
+        "summary": "Enroll a student",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Enroll" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Student enrolled successfully" },
+          "400": { "description": "Validation error" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/enroll/students": {
+      "get": {
+        "tags": ["Enrollment"],
+        "summary": "Get all enrolled students",
+        "responses": {
+          "200": { "description": "List of students" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/atd/mark": {
+      "post": {
+        "tags": ["Attendance"],
+        "summary": "Mark attendance for today",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "student@email.com"
+                  }
+                },
+                "required": ["email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Attendance marked successfully" },
+          "400": { "description": "Invalid request" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/atd/overall-attendance": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Get overall attendance summary",
+        "responses": {
+          "200": { "description": "Attendance summary" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/atd/students-attendance": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Get all students with attendance stats",
+        "responses": {
+          "200": { "description": "Students attendance list" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/atd/student/{id}": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Get attendance for a single student",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Student attendance details" },
+          "404": { "description": "Student not found" }
+        }
+      }
+    },
+    "/atd/student-track/{track}": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Get attendance by learning track",
+        "parameters": [
+          {
+            "name": "track",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Attendance by track" },
+          "404": { "description": "No students found" }
+        }
+      }
+    },
+    "/atd/date-range": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Get attendance by date range",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "example": "2024-01-01" }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "example": "2024-01-31" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Attendance records" },
+          "400": { "description": "Invalid date format" }
+        }
+      }
+    },
+    "/atd/student-name": {
+      "get": {
+        "tags": ["Attendance"],
+        "summary": "Search attendance by student name",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Matching students" },
+          "404": { "description": "No student found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Signup": {
+        "type": "object",
+        "required": ["name", "email", "password", "track"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "password": { "type": "string" },
+          "track": { "type": "string" }
+        }
+      },
+      "Signin": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string" },
+          "password": { "type": "string" }
+        }
+      },
+      "Enroll": {
+        "type": "object",
+        "required": ["firstname", "lastname", "email", "phonenumber", "gender", "learningtrack"],
+        "properties": {
+          "firstname": { "type": "string" },
+          "lastname": { "type": "string" },
+          "email": { "type": "string" },
+          "phonenumber": { "type": "string" },
+          "gender": { "type": "string" },
+          "learningtrack": { "type": "string" }
+        }
+      }
+    }
+  }
+}

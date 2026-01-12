@@ -1,21 +1,21 @@
 import { Router } from "express";
-import {markAttendance, 
-    autoMarkAbsence, 
+import {markAttendance,  
     getAttendanceByDateRange,
-    filterByTrack,
-    getOverallAllAttendance,
-    getAllStudentsWithAttendance
+    getAttendanceByTrack,
+    getStudentAttendance,
+    getOverallAttendance,
+    getAttendanceByName,
+    getAllStudentWithAttendance
 } from "../Controllers/attendance.controllers.js";
 
 
 const attendanceRouter = Router();
-attendanceRouter.get("/getallstudent", getAllStudentsWithAttendance)
-attendanceRouter.get("/getoverallallattendance", getOverallAllAttendance)
-attendanceRouter.get("/filterbydays", getAttendanceByDateRange )
-attendanceRouter.get("/filterbytrack", filterByTrack)
 attendanceRouter.post("/mark", markAttendance);          // Mark attendance
-attendanceRouter.post("/automarkabsence", autoMarkAbsence); // Get monthly summary
-
-
+attendanceRouter.get("/overall-attendance", getOverallAttendance);
+attendanceRouter.get("/students-attendance", getAllStudentWithAttendance);
+attendanceRouter.get("/student/:id", getStudentAttendance);
+attendanceRouter.get("/student-track/:track", getAttendanceByTrack);
+attendanceRouter.get("/date-range", getAttendanceByDateRange);
+attendanceRouter.get("/student-name/:name", getAttendanceByName);
 
 export default attendanceRouter;

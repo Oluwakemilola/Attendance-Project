@@ -44,7 +44,7 @@ const enrollSchema = new mongoose.Schema({
         type: String,
         required: [true, "Please enter phone Number"],
         unique: true,
-        match: [/^\+?[1-9]\d{1,14}$/, "Invalid Phone nunber"],
+        // match: [/^\+?[1-9]\d{1,14}$/, "Invalid Phone nunber"],
     },
     gender: {
         type: String,
